@@ -1,0 +1,51 @@
+---
+title: "ICA6"
+author: "Harrison Fringer"
+date: "2023-03-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+```
+
+## In Class Activity 6
+
+```{r}
+bankData <- read_delim("bankData.txt",
+           delim = ";")
+
+bD2 <- bankData %>%
+  rename("sub.dep" = y) %>%
+  filter(age < 75 & marital != "unknown")
+
+table(bD2$loan, bD2$sub.dep)
+```
+The top left number is the count of individuals from the dataset who have not subscribed to a term deposit and does not have a personal loan.
+
+4.
+```{r}
+table(bD2$loan, bD2$sub.dep, bD2$marital)
+```
+
+The top left number is the count of individuals from the dataset who have not subscribed to a term deposit, do not have a personal loan and are divorced.
+
+5.
+```{r}
+summary(bD2 %>% select(age, duration, emp.var.rate))
+```
+6.
+```{r}
+bD2 %>%
+  group_by(marital, loan) %>%
+  summarize(minimum = min(duration),
+            Q1 = quantile(duration, probs = 0.25),
+            mean = mean(duration),
+            median = median(duration),
+            Q3 = quantile(duration, probs = 0.75),
+            maximum = max(duration))
+
+```
+

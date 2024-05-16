@@ -1,0 +1,79 @@
+---
+title: "HW4"
+author: "Harrison Fringer"
+date: "2023-04-14"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loops/Functions
+
+1. I will create a for loop that finds the value of 10 factorial.
+```{r}
+  a = 1
+for (r in 1:10){
+  a = a * r
+}
+a
+```
+2. I will create a function that finds the factorial of a given number. There is then a case of each individual outcome, one with no specified value of interest, one with an integer less than or equal to 100 for the value of interest, and one with an integer greater than 100 for the value of .
+```{r}
+factori <- function(x = 10){
+  if(x > 100){
+  return("Your value is too large!")
+  }
+  else{
+    a = 1
+    for (r in 1:x){
+      a = a * r
+      
+} 
+return(a)
+  }
+}
+factori()
+factori(12)
+factori(101)
+```
+
+
+## More Functions
+
+3. The first example is to create a function that will convert centimeters to inches. For reference, 1 inch is 2.54 centimeters.
+
+```{r}
+convert_cm_to_in <- function(cm){
+  for (var in cm){
+    inch = cm/2.54
+    return(inch)
+  }
+}
+convert_cm_to_in(25)
+```
+I will also evaluate a vector of 0 to 100 centimeters, and will display the value in inches using this function.
+```{r}
+convert_cm_to_in(0:100)
+```
+
+4. Adding a rounding feature to the previous function, to two decimal places. It will be rechecked with the same vector.
+```{r}
+convert_cm_to_in <- function(cm){
+  for (var in cm){
+    inch = cm/2.54
+    return(round(inch,2))
+  }
+}
+convert_cm_to_in(0:100)
+```
+5. Lastly, I will create a function called my_change that takes your miscellaneous coins and provides a single output, the total dollar value.
+```{r}
+count_my_change <- function(dollars = 0, quarters = 0, dimes = 0, nickels = 0, pennies = 0){
+  total_value = dollars + (.25 *quarters) + (.10*dimes) + (.05 *nickels) + (.01 * pennies)
+  return(total_value)
+}
+count_my_change()
+count_my_change(5, 3, 2, 1, 4)
+```

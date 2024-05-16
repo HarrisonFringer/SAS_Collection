@@ -1,0 +1,68 @@
+---
+title: "ICA8"
+author: "Harrison Fringer"
+date: "2023-04-04"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Loop Questions
+
+Creating a loop that prints the nth letter of the alphabet in a specified format.
+```{r}
+for (o in 1:26){
+  print(paste(letters[o], "is", "the", scales::ordinal(o), "letter", "of", "the", "alphabet."))
+}
+```
+2. Using a count variable in a while loop that increases count by 1 while it is less than 40. It then checks if this iteration of count is divisible by 4.
+
+```{r}
+count <- 1
+while(count < 40){
+  count <- (count + 1)
+  if (count%%4 == 0){
+    next
+  }
+  print(count)
+}
+4%%2
+```
+## Vectorized Function Practice
+
+3. Applying the summarize function to each level of the mtcars data set using apply()
+
+```{r}
+apply(X = mtcars, MARGIN = 2, FUN = summary) 
+```
+4. Using the Iris dataset and the tapply() function to find the mean and standard deviation for each Species of the Sepal.Length column.
+
+```{r}
+tapply(X = iris$Sepal.Length, INDEX = as.factor(iris$Species), FUN = mean)
+tapply(X = iris$Sepal.Length, INDEX = as.factor(iris$Species), FUN = sd)
+```
+Then checking using the group by and summarize functions to prove they match.
+```{r}
+iris %>%
+  group_by(Species) %>%
+  summarize(mean = mean(Sepal.Length), sd = sd(Sepal.Length))
+```
+
+Running the test_vec through the chain of ifelse criteria, and printing the value.
+```{r}
+test_vec <- 100:150
+test_vec <- ifelse(test_vec%% 15 == 0, "FizzBuzz", 
+          ifelse(test_vec%% 5 == 0, "Buzz", ifelse(
+            test_vec%% 2 == 0, "Fizz", test_vec)
+          ))
+
+print(test_vec)
+```
+
+
+
+
+
