@@ -1,0 +1,320 @@
+---
+title: "HW6"
+author: "Harrison Fringer"
+date: "2025-03-19"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ISLR2)
+library(ggplot2)
+library(arules)
+```
+
+## Problem 1
+a.) First, we wil use the provided SDev output to find the PVE.
+```{r}
+data.arrests = USArrests
+prsum  = prcomp(USArrests)
+prsum$sdev**2/sum(prsum$sdev**2)
+```
+b.) We will now find the proportions of variance using Equation 12.10.
+
+```{r}
+prsum$x
+thing = colSums(prsum$x**2) / sum(colSums((data.arrests)^2))
+thing/sum(thing)
+```
+
+## Problem 2
+
+a.) We will now perform hierarchical clustering of the USArrests dataset
+
+```{r}
+complete_arrests = hclust(dist(data.arrests), method = "complete")
+```
+
+b.) We will now cut the tree and see what we get:
+
+```{r}
+cut_arrests = cutree(complete_arrests, 3)
+cut_arrests
+```
+
+c/d.) We will now scale the variables, then perform the same operations.
+
+```{r}
+scale.arrests = scale(data.arrests)
+compscale = hclust(dist(scale.arrests), method = "complete")
+cutscale = cutree(compscale,3)
+cutscale
+table(cut_arrests, cutscale)
+```
+
+Using the table below, it is clearly shown that the scaling affects the clustering. That being said, we should take note of the different variables used. Most are in per 100,000 units, but UrbanPop is expressed as percentages. To make sure that all variables can have a more balanced impact on the clustering,  I would recommend scaling the variables before making clusters.
+
+## Problem 3
+
+a. We will first make the requested data:
+
+```{r}
+set.seed(1)
+emp_df = matrix(nrow = 60, ncol = 51)
+for (h in 1:3){
+  center = h*3
+  class = as.character(h)
+for (i in 1:50){
+  for (o in 1:20){
+    x = rnorm(1, center, 1)
+    emp_df[20*(h-1) + o,i + 1] = x
+    emp_df[20*(h-1) + o, 1] = h
+    }
+  }
+}
+```
+
+b.) We will now perform PCA on the simulated data:
+
+```{r}
+simu_pca = prcomp(emp_df[,-1])
+summary(simu_pca)
+pca_comps = cbind(as.data.frame(simu_pca$x), emp_df[,1])
+plot(pca_comps$PC1, pca_comps$PC2, col = pca_comps$`emp_df[, 1]`)
+```
+
+c.) We will now perform K-Means with 3 clusters:
+
+```{r}
+km3.out = kmeans(emp_df[,-51], 3, nstart = 20)
+table(km3.out$cluster, emp_df[,1])
+```
+
+We can see it performed perfectly, which is to be expected
+
+
+d.) Now we perform it with 2 clusters:
+
+```{r}
+km2.out = kmeans(emp_df[,-51], 2, nstart = 20)
+table(km2.out$cluster, emp_df[,1])
+```
+Here we can see that two of the defined clusters are being combined, this makes sense.
+
+e.) Now we perform this with 4 clusters:
+
+```{r}
+km4.out = kmeans(emp_df[,-51], 4, nstart = 20)
+table(km4.out$cluster, emp_df[,1])
+```
+
+Here, one of our clusters is getting split into two separate clusters. This makes sense, as whichever cluster was most variable became two separate clusters.
+
+f.) Now we perform K-means of 3, on the first two principle components.
+
+```{r}
+km3.out = kmeans(pca_comps[,1:2], 3, nstart = 20)
+pca_comps = cbind(pca_comps, km3.out$cluster)
+plot(pca_comps$PC1, pca_comps$PC2, col = pca_comps$`km3.out$cluster`)
+```
+
+It is clear that the group was properly separated. This makes sense as most of our variance was explained by the first two principle componenets.
+
+g.) We will now scale the data and do this again:
+
+```{r}
+scale_df = as.data.frame(cbind(scale(emp_df[,-1]),emp_df[,1]))
+kmscale.out = kmeans(scale_df[,1:50], 3, nstart = 20)
+scale_df = cbind(scale_df[,-50], kmscale.out$cluster)
+plot(scale_df$V2, scale_df$V3, col = scale_df$`kmscale.out$cluster`)
+table(scale_df$`kmscale.out$cluster`,emp_df[,1])
+```
+
+After performing the scaling and placing the appropriate plots, kmeans still found the correct subtrends. This makes sense because rescaling shouldn't significantly change the separation of each group because the standard deviation of each variable has (roughly) the same variance before we scale them. 
+
+## Problem 4
+
+a.) Let's read in the data from the csv:
+```{r}
+gendat = read.csv("C:/Users/harri/Downloads/Ch12Ex13.csv", header = F)
+```
+
+b.) Time to make a dendrogram, using correlation-based distance:
+
+```{r}
+gencomp = hclust(dist(1 - cor(gendat)), method = "complete")
+avecomp = hclust(dist(1 - cor(gendat)), method = "average")
+singcomp = hclust(dist(1 - cor(gendat)), method = "single")
+centcomp = hclust(dist(1 - cor(gendat)), method = "centroid")
+par(mfrow = c(1,4))
+plot(gencomp)
+plot(avecomp)
+plot(singcomp)
+plot(centcomp)
+```
+
+It looks that regardless of the linkage type utilized, we see results that split the samples into two distinct groups, irregardless of linkage type. However, the specific orders slightly vary between the groups depending on the type of linkage used. Most notably, when applying centroid-based linkage, we get a considerably different looking dendrogram. 
+
+c.) Albeit not a statistically sound method, we can take the two distinct groups, then sum the rows and do a simple value comparison to see which genes show the greatest difference. This is more of a point estimate way, and could likely be answered further through use of methods such as t-tests. We will explore this point estimate approach using the complete linkage dendrogram. That said, we should note the method can easily be extended to the other linkage types. We will NOT take the absolute value until the end as that may interfere with the measure of variability. Again, I'd like to argue this isn't an optimal approach, but does provide us with an interpretable result.
+
+```{r}
+healthy = gendat[,1:20]
+healthmeans = rowMeans(healthy)
+diseased = gendat[,21:40]
+dismeans = rowMeans(diseased)
+genediffs = abs(healthmeans - dismeans)
+genelabels = as.data.frame(cbind(genediffs, c(1:1000)))
+colnames(genelabels) = c("mean_diffs","gene_num")
+orderedvals = genelabels[order(-genelabels$mean_diffs),]
+head(orderedvals)
+```
+
+Taking the head of the dataframe, we can see that the genes with the largest differences between means of the two groups are genes 600, 584, 549, 540, 502, and 568.
+
+## Problem 5
+
+a.) Let's begin getting the data organized and plotted as requested:
+
+```{r}
+haireye = as.data.frame(HairEyeColor)
+mhaireye = subset(haireye, haireye$Sex == "Male")
+fhaireye = subset(haireye, haireye$Sex == "Female")
+ggplot(data = mhaireye, aes(x = Hair, y = Freq, fill = Eye)) + geom_bar(stat = "identity", position = "stack") + ggtitle("Male Barplots")
+ggplot(data = fhaireye, aes(x = Hair, y = Freq, fill = Eye)) + geom_bar(stat = "identity", position = "stack") + ggtitle("Female Barplots")
+
+
+```
+
+b.) We will now split the table into respective two way tables, and then find the appropriate chi-square independence tests.
+
+```{r}
+#First, for eye and sex#
+es = haireye[,-1]
+twes = xtabs(Freq ~ Eye + Sex, data = es)
+chisq.test(twes)
+
+#Then, for sex and hair color#
+hs = haireye[,-2]
+twhs = xtabs(Freq ~ Hair + Sex, data = hs)
+chisq.test(twhs)
+
+#Lastly, for hair and eye color#
+he = haireye[,-3]
+twhe = xtabs(Freq ~ Eye + Hair, data = he)
+chisq.test(twhe)
+```
+
+From these 3 separate analyses, we can see that both Hair/Sex and Hair/Eye suggest that there is an association between these two pairs of features.
+
+## Problem 6
+
+a.) Let's first put the data into a dataframe, then build the appropriate marginal tables to find the analyses of interest.
+
+
+```{r}
+df.ucb = as.data.frame(UCBAdmissions)
+dept_list = c("A","B","C","D","E","F")
+for (i in 1:length(dept_list)){
+  ucbsub = subset(df.ucb, df.ucb$Dept == dept_list[i])
+  twsub = xtabs(Freq ~ Gender + Admit, data = ucbsub)
+  print(paste("Chi-Sq Test for Dept",dept_list[i]))
+  print(chisq.test(twsub))
+}
+```
+
+With these results, it appears that only Department A shows signs of an association between gender and admissions.
+
+b.)
+```{r}
+table.ucb = margin.table(UCBAdmissions, c(1,2))
+chisq.test(table.ucb)
+```
+This result shows that ignoring department, there is an association between gender and admission rates overall.
+
+c.) We will now carry out a CMH test and report the results:
+
+```{r}
+mantelhaen.test(UCBAdmissions)
+```
+
+This CMH test concludes that there is not an association between gender and admissions.
+
+d.) There is a slight confliction between parts b.) and c.), as one suggests no association while the other does suggest an association. That being said, investigation of each department shows that only a singular department shows a potential association between gender and admissions. With this in mind, I believe that it is safe to conclude that there is not an association between gender and admissions.
+
+e.) We will now calculate the success rates across each department, as well as the overall success rate. We will then draw some conclusions: 
+
+```{r}
+dept = c("A", "B", "C", "D", "E", "F")
+admit = matrix(0, nrow = 6, ncol = 2)
+for (i in 1:6){
+  foo = UCBAdmissions[,,i]
+  admit[i,1] = foo[1,1]/(foo[1,1]+foo[2,1])
+  admit[i,2] = foo[1,2]/(foo[1,2]+foo[2,2])
+}
+row.names(admit) = dept
+colnames(admit) = c("M", "F")
+round(admit,3)
+print("Overall:")
+print("M    F")
+c(round(table.ucb[1,1]/(table.ucb[1,1] + table.ucb[2,1]),3), round(table.ucb[1,2]/(table.ucb[1,2] + table.ucb[2,2]),3))
+```
+
+Disregarding the previous tests, acting solely on this information, I would conclude that certain departments (A) have gender-bias in admissions. The overall value also seems to suggest that there is some form of gender bias in admissions.
+
+## Problem 7
+
+a.) Let's load and analyze some of the base features of this dataset:
+
+```{r}
+data("Groceries")
+summary(Groceries)
+TransDist = table(size(Groceries))
+TransDist
+print("Percentage of >20 Item Transactions")
+round(100*sum(TransDist[20:length(TransDist)])/sum(TransDist),3)
+
+trandf = as.data.frame(TransDist)
+trandf$Var1 = as.numeric(trandf$Var1)
+trandf$v2 = trandf$Var1*trandf$Freq
+print("Average Number of items per transaction:")
+sum(trandf$v2)/nrow(Groceries)
+```
+
+Looking at the provided, summary, we can see that there are 
+i.) 9,835 rows (transactions), 
+ii.) with the item most frequently being bought being whole milk. 
+iii.) The number of transactions involving 20 or more items is 0.386%
+iv.) with the average number of items per transaction being 4.408 items, meaning we should either round to 4 or 5 items depending on our rounding criterion.
+
+b.) We will now find all rules with support > 1% and confidence > 50%. This gives:
+```{r}
+rules = apriori(Groceries, parameter = list(supp=0.01, conf=0.5))
+inspect(rules)
+```
+
+From this analysis, we see that there are `r length(rules)` rules with confidence higher than .01 and confidence higher than 0.5. We can additionally observe that the highest support comes from the rule {citrus fruit, root vegetables} -> {other vegetables}, with a confidence of 0.5862. We see that the rule with the highest support is {other vegetables, yogurt} -> {whole milk}, with a support of 0.0223. 
+For the first rule, we can interpret that:
+Support (.0103): 1.03% of all transactions contained the item pair citrus fruits, root vegetables, other vegetables.
+Confidence (.5862): 58.62% of the time that citrus fruits and root vegetabes were purchased, so were other vegetables.
+Lift (3.029): Purchasing root vegetables and citrus fruits saw a 3.029 times increase in the purchasing of other vegetables.
+
+For the second rule, we can  interpret that:
+Support (.0223): 2.23% of all transactions contained the item pair other vegetables, yogurt, and whole milk.
+Confidence (.5128): 51.28% of the time that other vegetables and yogurt were purchased, so was whole milk.
+Lift (3.029): Purchasing other vegetables and yogurt saw a 3.029 times increase in the purchasing of whole milk.
+
+c.) We will now perform the analysis such that we view only rules with > 1% support, > 20% confidence, and a lhs containing 'whole milk':
+
+```{r}
+leftrules = apriori(Groceries,appearance = list(lhs="whole milk"),
+                parameter = list(supp=0.01, conf=0.2))
+inspect(leftrules)
+```
+
+d.) Lastly, we will use the same parameter levels, but look for rhs being 'whole milk':
+
+```{r}
+rightrules = apriori(Groceries,appearance = list(rhs="whole milk"),
+                parameter = list(supp=0.01, conf=0.2))
+inspect(rightrules)
+```
